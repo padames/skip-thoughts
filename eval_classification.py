@@ -2,7 +2,7 @@
 
 import numpy as np
 #import sys
-import nbsvm
+#import nbsvm
 #import dataset_handler
 import importlib
 st = importlib.import_module("skip-thoughts")
@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 #from sklearn.cross_validation import KFold
 from sklearn.model_selection import KFold
 
-def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=False):
+def eval_nested_kfold(encoder, name, loc='./data/', k=5, seed=1234, use_nb=False):
     """
     Evaluate features with nested K-fold cross validation
     Outer loop: Held-out evaluation
@@ -25,31 +25,29 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=Fals
     # Load the dataset and extract features
     z, features = st.dataset_handler.load_data(encoder, name, loc=loc, seed=seed)
 
-    scan = [2**t for t in range(0,9,1)]
-    npts = len(z['text'])
+    scan = [2**t for t in range(0,3,1)]
+    #npts = len(z['text'])
     #kf = KFold(npts, n_folds=k, random_state=seed)
     kf = KFold(n_splits=k, random_state=seed)
     
     scores = []
-    for train, test in kf.split(npts):
+    for train_index, test_index in kf.split(features):
 
         # Split data
-        X_train = features[train]
-        y_train = z['labels'][train]
-        X_test = features[test]
-        y_test = z['labels'][test]
+        X_train, y_train = features[train_index], z['labels'][train_index]
+        X_test, y_test = features[test_index], z['labels'][test_index]
 
-        Xraw = [z['text'][i] for i in train]
-        Xraw_test = [z['text'][i] for i in test]
+
+        Xraw = [z['text'][i] for i in train_index]
+        Xraw_test = [z['text'][i] for i in test_index]
 
         scanscores = []
         for s in scan:
 
             # Inner KFold
-            #innerkf = KFold(len(X_train), n_folds=k, random_state=seed+1)
             innerkf = KFold(n_splits=k, random_state=seed+1)
             innerscores = []
-            for innertrain, innertest in innerkf.split(len(X_train)):
+            for innertrain, innertest in innerkf.split(X_train):
         
                 # Split data
                 X_innertrain = X_train[innertrain]
@@ -107,11 +105,11 @@ def compute_nb(X, y, Z):
     labels = [int(t) for t in y]
     ptrain = [X[i] for i in range(len(labels)) if labels[i] == 0]
     ntrain = [X[i] for i in range(len(labels)) if labels[i] == 1]
-    poscounts = nbsvm.build_dict(ptrain, [1,2])
-    negcounts = nbsvm.build_dict(ntrain, [1,2])
-    dic, r = nbsvm.compute_ratio(poscounts, negcounts)
-    trainX = nbsvm.process_text(X, dic, r, [1,2])
-    devX = nbsvm.process_text(Z, dic, r, [1,2])
+    poscounts = st.nbsvm.build_dict(ptrain, [1,2])
+    negcounts = st.nbsvm.build_dict(ntrain, [1,2])
+    dic, r = st.nbsvm.compute_ratio(poscounts, negcounts)
+    trainX = st.nbsvm.process_text(X, dic, r, [1,2])
+    devX = st.nbsvm.process_text(Z, dic, r, [1,2])
     return trainX, devX
 
 
