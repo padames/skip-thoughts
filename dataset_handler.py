@@ -2,12 +2,14 @@
 
 import numpy as np
 from numpy.random import RandomState
-import os.path
+from os.path import join, isfile
+from os import listdir
+
 
 
 def load_data(encoder, name, loc='./data/', seed=1234):
     """
-    Load one of MR, CR, SUBJ or MPQA
+    Load one of MR, CR, SUBJ or MPQA, ACLIMBD
     """
     z = {}
     if name == 'MR':
@@ -18,6 +20,8 @@ def load_data(encoder, name, loc='./data/', seed=1234):
         pos, neg = load_cr(loc=loc)
     elif name == 'MPQA':
         pos, neg = load_mpqa(loc=loc)
+    elif name == 'ACLIMBD':
+        pos, neg = load_aclimbd(loc=loc)
 
     labels = compute_labels(pos, neg)
     text, labels = shuffle_data(pos+neg, labels, seed=seed)
@@ -33,12 +37,32 @@ def load_rt(loc='./data/'):
     Load the MR dataset
     """
     pos, neg = [], []
-    with open(os.path.join(loc, 'rt-polarity.pos'), 'rb') as f:
+    with open(join(loc, 'rt-polarity.pos'), 'rb') as f:
         for line in f:
             pos.append(line.decode('latin-1').strip())
-    with open(os.path.join(loc, 'rt-polarity.neg'), 'rb') as f:
+    with open(join(loc, 'rt-polarity.neg'), 'rb') as f:
         for line in f:
             neg.append(line.decode('latin-1').strip())
+    return pos, neg
+
+def load_aclimbd(loc='./data/'):
+    """
+    Load the acl imbd dataset
+    """
+    pos, neg = [], []
+    pos_path = join(loc, 'pos')
+    onlyfiles = [f for f in listdir(pos_path) if isfile(join(pos_path, f))]
+    for f_name in onlyfiles:
+        with open(join(pos_path,f_name), 'rb') as f:
+            for line in f:
+                pos.append(line.decode('latin-1').strip())
+    
+    neg_path = join(loc, 'neg')
+    onlyfiles = [f for f in listdir(neg_path) if isfile(join(neg_path, f))]    
+    for f_name in onlyfiles:
+        with open(join(neg_path, f_name), 'rb') as f:
+            for line in f:
+                neg.append(line.decode('latin-1').strip())
     return pos, neg
 
 
