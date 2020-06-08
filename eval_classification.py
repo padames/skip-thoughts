@@ -1,15 +1,17 @@
 # Experiment scripts for binary classification benchmarks (e.g. MR, CR, MPQA, SUBJ)
 
 import numpy as np
-import sys
+#import sys
 import nbsvm
-import dataset_handler
+#import dataset_handler
+import importlib
+st = importlib.import_module("skip-thoughts")
 
 from scipy.sparse import hstack
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.cross_validation import KFold
-
+#from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 
 def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=False):
     """
@@ -21,11 +23,13 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=Fals
     Options for name are 'MR', 'CR', 'SUBJ' and 'MPQA'
     """
     # Load the dataset and extract features
-    z, features = dataset_handler.load_data(encoder, name, loc=loc, seed=seed)
+    z, features = st.dataset_handler.load_data(encoder, name, loc=loc, seed=seed)
 
     scan = [2**t for t in range(0,9,1)]
     npts = len(z['text'])
-    kf = KFold(npts, n_folds=k, random_state=seed)
+    #kf = KFold(npts, n_folds=k, random_state=seed)
+    kf = KFold(n_splits=k, random_state=seed)
+    kf.split(npts)
     scores = []
     for train, test in kf:
 
@@ -74,8 +78,8 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=Fals
         # Get the index of the best score
         s_ind = np.argmax(scanscores)
         s = scan[s_ind]
-        print scanscores
-        print s
+        print (scanscores)
+        print (s)
  
         # NB (if applicable)
         if use_nb:
@@ -90,7 +94,7 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=Fals
         # Evaluate
         acc = clf.score(X_test, y_test)
         scores.append(acc)
-        print scores
+        print (scores)
 
     return scores
 
