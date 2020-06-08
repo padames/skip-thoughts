@@ -1,16 +1,17 @@
 # Experiment scripts for binary classification benchmarks (e.g. MR, CR, MPQA, SUBJ)
 
+from time import process_time, time
 import numpy as np
-#import sys
-#import nbsvm
-#import dataset_handler
+import pickle
+from joblib import dump, load
 import importlib
+from os import getcwd
+from os.path import join, isfile
 st = importlib.import_module("skip-thoughts")
 
 from scipy.sparse import hstack
 
 from sklearn.linear_model import LogisticRegression
-#from sklearn.cross_validation import KFold
 from sklearn.model_selection import KFold
 
 def eval_nested_kfold(encoder, name, loc='./data/', k=5, seed=1234, use_nb=False):
@@ -24,11 +25,22 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=5, seed=1234, use_nb=False
     """
     # Load the dataset and extract features
     z, features = st.dataset_handler.load_data(encoder, name, loc=loc, seed=seed)
-
+    
+    time_stamp = time.strftime("%Y%m%d-%H%M%S")
+    file_name = 'sentence_embeddings_' + time_stamp + '.dat'
+    file_name_full_path = join(loc, 'skip-thoughts', 'data', file_name)
+    print("Saving embeddings to file {0}".format(file_name_full_path))
+    with open(file_name_full_path, 'wb') as f:
+        pickle.dump(z, f, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(features, f, protocol=pickle.HIGHEST_PROTOCOL)
+    
     scan = [2**t for t in range(0,3,1)]
     #npts = len(z['text'])
     #kf = KFold(npts, n_folds=k, random_state=seed)
     kf = KFold(n_splits=k, random_state=seed)
+    
+    start_time = process_time()
+    print("Started 'eval_nested_kfold'".format(start_time))
     
     scores = []
     for train_index, test_index in kf.split(features):
@@ -89,11 +101,18 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=5, seed=1234, use_nb=False
         # Train classifier
         clf = LogisticRegression(C=s)
         clf.fit(X_train, y_train)
-
+        
+        cwd = getcwd()
+        dump(clf, join(cwd,'skip-thoughts/models', 'best_logit.joblib.gz'))
+        
         # Evaluate
         acc = clf.score(X_test, y_test)
         scores.append(acc)
         print (scores)
+
+        end_time = process_time()
+        
+        print("Elapsed time in seconds for 5-fold CV and hyperparameter tuning on Logit: {0:4.2f}".format(end_time - start_time))    
 
     return scores
 
@@ -113,4 +132,17 @@ def compute_nb(X, y, Z):
     return trainX, devX
 
 
-
+def eval_test_data(encoder, name, loc='./data/'):
+    """
+    load previously saved logistic regression model to predict on test data.
+    Only works on ACLIMBD, because it has train and test data stored separately.
+    """
+    acc = 0.0
+    if name == 'ACLIMBD':
+        full_path_model_file = join(loc, 'skip-thoughts', 'models', 'best_logit.joblib.gz')
+        if isfile(full_path_model_file):
+            full_path_test = join(loc, 'skip-thoughts', 'data', 'aclImdb', 'test')
+            z, features = st.dataset_handler.load_data(encoder, name, loc=full_path_test)
+            clf = load(full_path_model_file)
+            acc = clf.score(features, z['labels'])
+    return acc

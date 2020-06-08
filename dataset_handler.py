@@ -2,6 +2,9 @@
 
 import numpy as np
 from numpy.random import RandomState
+from nltk import sent_tokenize
+from nltk.tokenize import word_tokenize
+import string
 from os.path import join, isfile
 from os import listdir
 
@@ -28,7 +31,7 @@ def load_data(encoder, name, loc='./data/', seed=1234):
     z['text'] = text
     z['labels'] = labels
     print( 'Computing skip-thought vectors...')
-    features = encoder.encode(text, verbose=False)
+    features = encoder.encode(text, verbose=False, use_eos=False)
     return z, features
 
 
@@ -55,14 +58,35 @@ def load_aclimbd(loc='./data/'):
     for f_name in onlyfiles:
         with open(join(pos_path,f_name), 'rb') as f:
             for line in f:
-                pos.append(line.decode('latin-1').strip())
+                l = line.decode('latin-1').strip()
+                sentences = sent_tokenize(l)
+                for s in sentences:
+                    tokens = word_tokenize(s)
+                    tokens = [w.lower() for w in tokens]
+                    table = str.maketrans(',', ' ', '!?@#%&*"\'')
+                    words = [w.translate(table) for w in tokens]
+                    # remove remaining tokens that are not alphabetic
+                    sentence = " ".join(words)
+                    sent = sentence.split()
+                    pos.append(" ".join(sent))
     
     neg_path = join(loc, 'neg')
     onlyfiles = [f for f in listdir(neg_path) if isfile(join(neg_path, f))]    
     for f_name in onlyfiles:
         with open(join(neg_path, f_name), 'rb') as f:
             for line in f:
-                neg.append(line.decode('latin-1').strip())
+                l = line.decode('latin-1').strip()
+                sentences = sent_tokenize(l)
+                for s in sentences:
+                    tokens = word_tokenize(s)
+                    tokens = [w.lower() for w in tokens]
+                    table = str.maketrans(',', ' ', '!?@#%&*"\'')
+                    words = [w.translate(table) for w in tokens]
+                    # remove remaining tokens that are not alphabetic
+                    sentence = " ".join(words)
+                    sent = sentence.split()
+                    neg.append(" ".join(sent))                
+
     return pos, neg
 
 

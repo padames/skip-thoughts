@@ -1,7 +1,8 @@
 '''
 Skip-thought vectors
 '''
-import os
+from time import process_time
+import datetime
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -110,6 +111,10 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
     """
     Encode sentences in the list X. Each entry will return a vector
     """
+    start_time = process_time()
+    
+    print(datetime.datetime.now().strftime("Started 'encode' at %Y-%m-%d %H:%M:%S"))
+
     # first, do preprocessing
     X = preprocess(X)
 
@@ -167,6 +172,13 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
                 bfeatures[c] = bff[ind]
     
     features = numpy.c_[ufeatures, bfeatures]
+    
+    end_time = process_time()
+    
+    
+    print(datetime.datetime.now().strftime("Finished 'encode' at %Y-%m-%d %H:%M:%S"))
+    
+    print("Elapsed time in seconds for encoding: {0:4.2f}".format(end_time - start_time))    
     return features
 
 
