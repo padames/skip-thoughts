@@ -29,9 +29,9 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=Fals
     npts = len(z['text'])
     #kf = KFold(npts, n_folds=k, random_state=seed)
     kf = KFold(n_splits=k, random_state=seed)
-    kf.split(npts)
+    
     scores = []
-    for train, test in kf:
+    for train, test in kf.split(npts):
 
         # Split data
         X_train = features[train]
@@ -46,9 +46,10 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=10, seed=1234, use_nb=Fals
         for s in scan:
 
             # Inner KFold
-            innerkf = KFold(len(X_train), n_folds=k, random_state=seed+1)
+            #innerkf = KFold(len(X_train), n_folds=k, random_state=seed+1)
+            innerkf = KFold(n_splits=k, random_state=seed+1)
             innerscores = []
-            for innertrain, innertest in innerkf:
+            for innertrain, innertest in innerkf.split(len(X_train)):
         
                 # Split data
                 X_innertrain = X_train[innertrain]
