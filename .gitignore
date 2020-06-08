@@ -58,3 +58,6 @@ target/
 
 # Downloaded data files
 data/
+
+# Downloaded tables
+tables/

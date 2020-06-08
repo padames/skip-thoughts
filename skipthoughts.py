@@ -2,11 +2,13 @@
 Skip-thought vectors
 '''
 import os
+import warnings
+warnings.filterwarnings("ignore")
 
 import theano
 import theano.tensor as tensor
 
-import cPickle as pkl
+import pickle as pkl
 import numpy
 import copy
 import nltk
@@ -20,8 +22,10 @@ profile = False
 #-----------------------------------------------------------------------------#
 # Specify model and table locations here
 #-----------------------------------------------------------------------------#
-path_to_models = '/u/rkiros/public_html/models/'
-path_to_tables = '/u/rkiros/public_html/models/'
+#path_to_models = '/u/rkiros/public_html/models/'
+#path_to_tables = '/u/rkiros/public_html/models/'
+path_to_models = 'skip-thoughts/data/'
+path_to_tables = 'skip-thoughts/tables/'
 #-----------------------------------------------------------------------------#
 
 path_to_umodel = path_to_models + 'uni_skip.npz'
@@ -33,7 +37,7 @@ def load_model():
     Load the model with saved tables
     """
     # Load model options
-    print 'Loading model parameters...'
+    print( 'Loading model parameters...')
     with open('%s.pkl'%path_to_umodel, 'rb') as f:
         uoptions = pkl.load(f)
     with open('%s.pkl'%path_to_bmodel, 'rb') as f:
@@ -48,18 +52,18 @@ def load_model():
     btparams = init_tparams(bparams)
 
     # Extractor functions
-    print 'Compiling encoders...'
+    print('Compiling encoders...')
     embedding, x_mask, ctxw2v = build_encoder(utparams, uoptions)
     f_w2v = theano.function([embedding, x_mask], ctxw2v, name='f_w2v')
     embedding, x_mask, ctxw2v = build_encoder_bi(btparams, boptions)
     f_w2v2 = theano.function([embedding, x_mask], ctxw2v, name='f_w2v2')
 
     # Tables
-    print 'Loading tables...'
+    print('Loading tables...')
     utable, btable = load_tables()
 
     # Store everything we need in a dictionary
-    print 'Packing up...'
+    print( 'Packing up...')
     model = {}
     model['uoptions'] = uoptions
     model['boptions'] = boptions
@@ -76,8 +80,8 @@ def load_tables():
     Load the tables
     """
     words = []
-    utable = numpy.load(path_to_tables + 'utable.npy')
-    btable = numpy.load(path_to_tables + 'btable.npy')
+    utable = numpy.load(path_to_tables + 'utable.npy', allow_pickle=True, encoding='latin1')
+    btable = numpy.load(path_to_tables + 'btable.npy', allow_pickle=True, encoding='latin1')
     f = open(path_to_tables + 'dictionary.txt', 'rb')
     for line in f:
         words.append(line.decode('utf-8').strip())
@@ -93,13 +97,13 @@ class Encoder(object):
     """
 
     def __init__(self, model):
-      self._model = model
+        self._model = model
 
     def encode(self, X, use_norm=True, verbose=True, batch_size=128, use_eos=False):
-      """
-      Encode sentences in the list X. Each entry will return a vector
-      """
-      return encode(self._model, X, use_norm, verbose, batch_size, use_eos)
+        """
+        Encode sentences in the list X. Each entry will return a vector
+        """
+        return encode(self._model, X, use_norm, verbose, batch_size, use_eos)
 
 
 def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False):
@@ -125,7 +129,7 @@ def encode(model, X, use_norm=True, verbose=True, batch_size=128, use_eos=False)
     # Get features. This encodes by length, in order to avoid wasting computation
     for k in ds.keys():
         if verbose:
-            print k
+            print(k)
         numbatches = len(ds[k]) / batch_size + 1
         for minibatch in range(numbatches):
             caps = ds[k][minibatch::numbatches]
@@ -194,10 +198,10 @@ def nn(model, text, vectors, query, k=5):
     scores = numpy.dot(qf, vectors.T).flatten()
     sorted_args = numpy.argsort(scores)[::-1]
     sentences = [text[a] for a in sorted_args[:k]]
-    print 'QUERY: ' + query
-    print 'NEAREST: '
+    print('QUERY: {}'.format(query))
+    print( 'NEAREST: ')
     for i, s in enumerate(sentences):
-        print s, sorted_args[i]
+        print("{} {}".format(s, sorted_args[i]))
 
 
 def word_features(table):
@@ -221,10 +225,10 @@ def nn_words(table, wordvecs, query, k=10):
     scores = numpy.dot(qf, wordvecs.T).flatten()
     sorted_args = numpy.argsort(scores)[::-1]
     words = [keys[a] for a in sorted_args[:k]]
-    print 'QUERY: ' + query
-    print 'NEAREST: '
+    print('QUERY: '.format(query))
+    print('NEAREST: ')
     for i, w in enumerate(words):
-        print w
+        print(w)
 
 
 def _p(pp, name):
@@ -239,7 +243,7 @@ def init_tparams(params):
     initialize Theano shared variables according to the initial parameters
     """
     tparams = OrderedDict()
-    for kk, pp in params.iteritems():
+    for kk, pp in params.items():
         tparams[kk] = theano.shared(params[kk], name=kk)
     return tparams
 
@@ -249,7 +253,7 @@ def load_params(path, params):
     load parameters
     """
     pp = numpy.load(path)
-    for kk, vv in params.iteritems():
+    for kk, vv in params.items():
         if kk not in pp:
             warnings.warn('%s is not in the archive'%kk)
             continue
@@ -340,6 +344,7 @@ def build_encoder_bi(tparams, options):
 # some utilities
 def ortho_weight(ndim):
     W = numpy.random.randn(ndim, ndim)
+    #W = numpy.random.Generator.standard_normal(size=(ndim, ndim))
     u, s, v = numpy.linalg.svd(W)
     return u.astype('float32')
 
@@ -350,7 +355,9 @@ def norm_weight(nin,nout=None, scale=0.1, ortho=True):
     if nout == nin and ortho:
         W = ortho_weight(nin)
     else:
-        W = numpy.random.uniform(low=-scale, high=scale, size=(nin, nout))
+        W = numpy.random.uniform (low=-scale, high=scale, size=(nin, nout))
+        #W = numpy.random.RandomState.uniform(low=-scale, high=scale, size=(nin, nout))
+        
     return W.astype('float32')
 
 
