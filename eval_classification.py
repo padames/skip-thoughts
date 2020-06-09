@@ -1,6 +1,7 @@
 # Experiment scripts for binary classification benchmarks (e.g. MR, CR, MPQA, SUBJ)
 
-from time import process_time, time
+from time import process_time
+import time
 import numpy as np
 import pickle
 from joblib import dump, load
@@ -26,9 +27,10 @@ def eval_nested_kfold(encoder, name, loc='./data/', k=5, seed=1234, use_nb=False
     # Load the dataset and extract features
     z, features = st.dataset_handler.load_data(encoder, name, loc=loc, seed=seed)
     
-    time_stamp = time.strftime("%Y%m%d-%H%M%S")
+    time_stamp = time.strftime("%Y%m%d_%H%M%S")
     file_name = 'sentence_embeddings_' + time_stamp + '.dat'
-    file_name_full_path = join(loc, 'skip-thoughts', 'data', file_name)
+    cwd = getcwd()
+    file_name_full_path = join(cwd, 'skip-thoughts', 'data', file_name)
     print("Saving embeddings to file {0}".format(file_name_full_path))
     with open(file_name_full_path, 'wb') as f:
         pickle.dump(z, f, protocol=pickle.HIGHEST_PROTOCOL)

@@ -11,7 +11,6 @@ import theano.tensor as tensor
 
 import pickle as pkl
 import numpy
-import copy
 import nltk
 
 from collections import OrderedDict, defaultdict

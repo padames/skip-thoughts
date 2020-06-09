@@ -4,7 +4,6 @@ import numpy as np
 from numpy.random import RandomState
 from nltk import sent_tokenize
 from nltk.tokenize import word_tokenize
-import string
 from os.path import join, isfile
 from os import listdir
 
@@ -31,7 +30,7 @@ def load_data(encoder, name, loc='./data/', seed=1234):
     z['text'] = text
     z['labels'] = labels
     print( 'Computing skip-thought vectors...')
-    features = encoder.encode(text, verbose=False, use_eos=False)
+    features = encoder.encode(text, verbose=False, use_eos=True)
     return z, features
 
 
